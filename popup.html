@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto-Fill Forms</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 380px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: #fafbfc;
+        color: #1a1d1f;
+        line-height: 1.6;
+        font-size: 14px;
+      }
+
+      .container {
+        background: #ffffff;
+        border: 1px solid #e6ebf1;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.12);
+      }
+
+      /* Header */
+      .header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e6ebf1;
+        padding: 16px 20px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a1d1f;
+        margin-bottom: 2px;
+        letter-spacing: -0.3px;
+      }
+
+      .header p {
+        font-size: 13px;
+        color: #6c737f;
+        font-weight: 400;
+      }
+
+      /* Main Content */
+      .content {
+        padding: 20px;
+      }
+
+      /* Mode Switcher */
+      .mode-switcher {
+        display: flex;
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 3px;
+        margin-bottom: 24px;
+        border: 1px solid #e6ebf1;
+      }
+
+      .mode-button {
+        flex: 1;
+        padding: 11px 16px;
+        border: none;
+        background: transparent;
+        font-size: 14px;
+        font-weight: 500;
+        color: #6c737f;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        letter-spacing: -0.1px;
+      }
+
+      .mode-button.active {
+        background: #ffffff;
+        color: #1a1d1f;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.12);
+      }
+
+      .mode-button:hover:not(.active) {
+        color: #434951;
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      /* Profile Selection Section */
+      .profile-section {
+        margin-bottom: 24px;
+      }
+
+      .profile-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1a1d1f;
+        margin-bottom: 8px;
+        letter-spacing: -0.1px;
+      }
+
+      .profile-label-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .refresh-button {
+        background: #f8f9fa;
+        border: 1px solid #e6ebf1;
+        border-radius: 6px;
+        padding: 6px 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+        color: #6c737f;
+        min-width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .refresh-button:hover {
+        background: #e6ebf1;
+        border-color: #d1d5db;
+        color: #1a1d1f;
+        transform: rotate(45deg);
+      }
+
+      .refresh-button:active {
+        transform: rotate(90deg) scale(0.95);
+        background: #d1d5db;
+      }
+
+      .refresh-button:disabled {
+        background: #f1f3f5;
+        border-color: #e5e7eb;
+        color: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .refresh-button.loading {
+        animation: spin 1s linear infinite;
+      }
+
+      .refresh-icon {
+        font-size: 14px;
+        line-height: 1;
+      }
+
+      .profile-select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        background: #ffffff;
+        font-size: 14px;
+        color: #1a1d1f;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 40px;
+      }
+
+      /* Profile source indicators in dropdown */
+      .profile-select option.cloud-profile {
+        background: linear-gradient(90deg, #e0f2fe 0%, #ffffff 25%);
+        color: #0369a1;
+        font-weight: 500;
+      }
+
+      .profile-select option.local-profile {
+        background: linear-gradient(90deg, #fef3c7 0%, #ffffff 25%);
+        color: #92400e;
+        font-weight: 400;
+      }
+
+      .profile-select option.cache-profile {
+        background: linear-gradient(90deg, #f1ebf7 0%, #ffffff 25%);
+        color: #030006;
+        font-weight: 400;
+      }
+
+      .profile-select:hover {
+        border-color: #9ca3af;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      }
+
+      .profile-select:focus {
+        outline: none;
+        border-color: #1a1d1f;
+        box-shadow: 0 0 0 3px rgba(26, 29, 31, 0.1);
+      }
+
+      /* CSV Upload Section */
+      .upload-section {
+        margin-bottom: 24px;
+      }
+
+      .file-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #222222;
+        margin-bottom: 8px;
+        cursor: pointer;
+        letter-spacing: -0.1px;
+      }
+
+      .file-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px dashed #b0b0b0;
+        border-radius: 8px;
+        background: #fafafa;
+        font-size: 14px;
+        color: #717171;
+        transition: all 0.15s ease;
+        cursor: pointer;
+      }
+
+      .file-input:hover {
+        border-color: #222222;
+        background: #f7f7f7;
+      }
+
+      .file-input:focus {
+        outline: none;
+        border-color: #222222;
+        box-shadow: 0 0 0 2px rgba(34, 34, 34, 0.1);
+      }
+
+      .file-status {
+        margin-top: 8px;
+        font-size: 13px;
+        padding: 8px 12px;
+        border-radius: 6px;
+        display: none;
+        font-weight: 500;
+      }
+
+      .file-status.success {
+        background: #f0f9f0;
+        color: #1d4620;
+        border: 1px solid #d4edda;
+      }
+
+      .file-status.error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      /* User Profile Display */
+      .user-profile {
+        background: #f8f9fa;
+        border: 1px solid #e6ebf1;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 20px;
+      }
+
+      /* Profile source indicators for user profile display */
+      .user-profile.cloud-source {
+        background: linear-gradient(135deg, #e0f2fe 0%, #f8f9fa 100%);
+        border-color: #0ea5e9;
+        box-shadow: 0 2px 4px rgba(14, 165, 233, 0.1);
+      }
+
+      .user-profile.local-source {
+        background: linear-gradient(135deg, #fef3c7 0%, #f8f9fa 100%);
+        border-color: #f59e0b;
+        box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
+      }
+
+      .user-profile.cache-source {
+        background: linear-gradient(135deg, #f3e8ff 0%, #f8f9fa 100%);
+        border-color: #8b5cf6;
+        box-shadow: 0 2px 4px rgba(139, 92, 246, 0.1);
+      }
+
+      .user-profile.csv-upload-source {
+        background: linear-gradient(135deg, #ecfdf5 0%, #f8f9fa 100%);
+        border-color: #10b981;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+      }
+
+      .profile-header {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6c737f;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Source indicators for profile header */
+      .profile-source-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 6px;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-left: 8px;
+      }
+
+      .profile-source-badge.cloud {
+        background: #0ea5e9;
+        color: #ffffff;
+      }
+
+      .profile-source-badge.local {
+        background: #f59e0b;
+        color: #ffffff;
+      }
+
+      .profile-source-badge.cache {
+        background: #8b5cf6;
+        color: #ffffff;
+      }
+
+      .profile-source-badge.csv-upload {
+        background: #10b981;
+        color: #ffffff;
+      }
+
+      .profile-id {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1a1d1f;
+        background: #e6ebf1;
+        padding: 3px 8px;
+        border-radius: 4px;
+        text-transform: none;
+        letter-spacing: 0;
+      }
+
+      .profile-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1a1d1f;
+        margin-bottom: 4px;
+        letter-spacing: -0.2px;
+      }
+
+      .profile-details {
+        font-size: 13px;
+        color: #6c737f;
+        line-height: 1.5;
+      }
+
+      /* Fill Button */
+      .fill-button {
+        width: 100%;
+        background: #1a1d1f;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: 20px;
+        letter-spacing: -0.1px;
+      }
+
+      .fill-button:hover:not(:disabled) {
+        background: #2d3138;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(26, 29, 31, 0.2);
+      }
+
+      .fill-button:active {
+        transform: translateY(0);
+      }
+
+      .fill-button:disabled {
+        background: #f1f3f5;
+        color: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+        border: 1px solid #e6ebf1;
+      }
+
+      /* Status Message */
+      .status {
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 20px;
+        display: none;
+        letter-spacing: -0.1px;
+      }
+
+      .status.success {
+        background: #f0f9ff;
+        color: #0c4a6e;
+        border: 1px solid #bae6fd;
+      }
+
+      .status.error {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      .status.info {
+        background: #f8f9fa;
+        color: #434951;
+        border: 1px solid #e6ebf1;
+      }
+
+      /* Statistics */
+      .stats {
+        background: #fafafa;
+        border: 1px solid #ebebeb;
+        border-radius: 8px;
+        padding: 20px;
+        display: none;
+        /* Optimisation GPU */
+        transform: translateZ(0);
+        will-change: transform;
+      }
+
+      .stats-header {
+        font-size: 14px;
+        font-weight: 600;
+        color: #222222;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        letter-spacing: -0.1px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        justify-content: center;
+        justify-items: center;
+      }
+
+      .stat-item {
+        text-align: center;
+        padding: 6px 6px;
+        background: #ffffff;
+        border-radius: 8px;
+        border: 1px solid #ebebeb;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        min-height: 10px;
+        max-width: 40px;
+      }
+
+      .stat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      }
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #222222;
+        line-height: 1;
+        letter-spacing: -0.3px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Colored numbers */
+      .stat-value--detected {
+        color: #1d4ed8; /* deeper blue */
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .stat-value--filled {
+        color: #059669; /* deeper green */
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .stat-value--unfilled {
+        color: #dc2626; /* red */
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+
+      /* Results Details */
+      .results {
+        max-height: 160px;
+        overflow-y: auto;
+        border-top: 1px solid #ebebeb;
+        padding-top: 16px;
+        text-align: left;
+        /* Optimisation rendu */
+        contain: layout style;
+        transform: translateZ(0);
+      }
+
+      .result-item {
+        display: block;
+        padding: 8px 0;
+        font-size: 13px;
+        border-bottom: 1px solid #f3f4f6;
+        /* Optimisation rendu */
+        contain: layout;
+      }
+      
+      .result-item:last-child {
+        border-bottom: none;
+      }
+      
+      .result-item.info {
+        font-style: italic;
+        opacity: 0.8;
+        border-bottom: none;
+      }
+      
+      .result-item.success {
+        background-color: #f0fdf4;
+        border-left: 3px solid #16a34a;
+        padding-left: 12px;
+        margin-left: -4px;
+      }
+      
+      .result-item.error {
+        background-color: #fef2f2;
+        border-left: 3px solid #dc2626;
+        padding-left: 12px;
+        margin-left: -4px;
+      }
+
+      .result-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      .result-icon.success {
+        background: #d4edda;
+        color: #1d4620;
+      }
+
+      .result-icon.error {
+        background: #fecaca;
+        color: #991b1b;
+      }
+
+      .result-text {
+        color: #484848;
+        line-height: 1.4;
+        font-weight: 400;
+      }
+
+      /* Results table style */
+      .results-header {
+        display: block;
+        font-weight: 600;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #ebebeb;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      /* Scrollbar */
+      .results::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .results::-webkit-scrollbar-track {
+        background: #f7f7f7;
+        border-radius: 3px;
+      }
+
+      .results::-webkit-scrollbar-thumb {
+        background: #b0b0b0;
+        border-radius: 3px;
+      }
+
+      .results::-webkit-scrollbar-thumb:hover {
+        background: #717171;
+      }
+
+      /* Loading State */
+      .loading {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid transparent;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Hidden utility */
+      .hidden {
+        display: none !important;
+      }
+
+      /* Settings Section */
+      .settings-section {
+        background: #f8f9fa;
+        border: 1px solid #e6ebf1;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+      }
+
+      .setting-item {
+        margin-bottom: 12px;
+      }
+
+      .setting-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .setting-label {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .setting-checkbox {
+        margin: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .setting-checkbox:checked {
+        background: #2563eb;
+        border-color: #2563eb;
+      }
+
+      .setting-checkbox:hover {
+        border-color: #9ca3af;
+      }
+
+      .setting-checkbox:checked:hover {
+        background: #1d4ed8;
+        border-color: #1d4ed8;
+      }
+
+      .setting-text {
+        font-weight: 500;
+        color: #1a1d1f;
+        margin-bottom: 2px;
+      }
+
+      .setting-description {
+        font-size: 12px;
+        color: #6c737f;
+        line-height: 1.3;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 400px) {
+        body {
+          width: 320px;
+        }
+
+        .content {
+          padding: 16px;
+        }
+
+        .header {
+          padding: 14px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>FillEngine</h1>
+        <p>Formulaires automatisés</p>
+      </div>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- Mode Switcher -->
+        <div class="mode-switcher">
+          <button id="profileModeBtn" class="mode-button active">Profils</button>
+          <button id="csvModeBtn" class="mode-button">Upload CSV</button>
+        </div>
+
+        <!-- Profile Selection Section -->
+        <div id="profileSection" class="profile-section">
+          <div class="profile-label-container">
+            <label for="profileSelect" class="profile-label">Choisir un profil</label>
+            <button id="refreshProfilesBtn" class="refresh-button" title="Rafraîchir les profils depuis le cloud">
+              <span class="refresh-icon">🔄</span>
+            </button>
+          </div>
+          <select id="profileSelect" class="profile-select">
+            <option value="">Sélectionner...</option>
+          </select>
+        </div>
+
+        <!-- CSV Upload Section -->
+        <div id="csvSection" class="upload-section hidden">
+          <label for="csvFileInput" class="file-label">Importer un fichier CSV</label>
+          <input type="file" id="csvFileInput" accept=".csv" class="file-input" />
+          <div class="file-status" id="fileStatus"></div>
+        </div>
+
+        <!-- User Profile Display -->
+        <div id="userProfileDisplay" class="user-profile" style="display: none">
+          <div class="profile-header">
+            <span>Profil actif</span>
+            <span class="profile-id" id="profileId"></span>
+          </div>
+          <div class="profile-info">
+            <div class="profile-name" id="profileName">-</div>
+            <div class="profile-details" id="profileDetails">-</div>
+          </div>
+        </div>
+
+        <!-- Auto-Fill Settings -->
+        <div class="settings-section">
+          <div class="setting-item">
+            <label class="setting-label">
+              <input type="checkbox" id="autoFillEnabled" class="setting-checkbox" checked>
+              <span class="setting-text">Remplissage automatique</span>
+              <span class="setting-description">Remplir automatiquement les formulaires au chargement</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Fill Button -->
+        <button id="fillFormBtn" class="fill-button">
+          <span class="button-text">Remplir le formulaire</span>
+        </button>
+
+        <!-- Status Message -->
+        <div id="status" class="status"></div>
+
+        <!-- Statistics -->
+        <div id="stats" class="stats">
+          <div class="stats-header">Résultats</div>
+
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value stat-value--detected" id="fieldsDetected">-</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value stat-value--unfilled" id="fieldsUnfilled">-</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value stat-value--filled" id="fieldsFilled">-</div>
+            </div>
+          </div>
+
+          <div class="results" id="results"></div>
+        </div>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
