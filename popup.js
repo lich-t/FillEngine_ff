@@ -430,32 +430,9 @@ document.addEventListener("DOMContentLoaded", function () {
         return cachedProfiles;
       }
       
-      // Fallback vers le fichier local si disponible
-      try {
-        console.log("🔄 Trying local file fallback...");
-        const response = await fetch(chrome.runtime.getURL("profiles.csv"));
-        if (response.ok) {
-          const csvContent = await response.text();
-          const localProfiles = parseProfilesCSV(csvContent);
-          console.log("✅ Using local file fallback:", localProfiles.length, "profiles");
-          
-          profilesSource = 'local';
-          profileSourceMetadata = {
-            loadedAt: Date.now(),
-            source: 'local',
-            fallbackUsed: true,
-            errorMessage: cloudError.message
-          };
-          
-          return localProfiles;
-        }
-      } catch (localError) {
-        console.log("❌ Local fallback failed:", localError.message);
-      }
-      
-      // Si aucun fallback disponible
-      console.error("❌ No profiles available from any source");
-      throw new Error("Impossible de charger les profils (cloud, cache et local indisponibles)");
+      // Si aucun fallback disponible (pas de fichier local)
+      console.error("❌ No profiles available from cloud or cache");
+      throw new Error("Aucune donnée");
     }
   }
 
@@ -875,13 +852,24 @@ document.addEventListener("DOMContentLoaded", function () {
       // Load profiles from database
       availableProfiles = await loadProfilesDatabase();
 
-      // Populate the dropdown
-      populateProfileSelect(availableProfiles);
-
-      console.log("✅ Profiles mode initialized successfully");
+      if (!availableProfiles || availableProfiles.length === 0) {
+        showStatus("No data", "error");
+        profileSelect.innerHTML = '<option value="">Aucune donnée</option>';
+        currentUserData = null;
+        hideUserProfile();
+        await updateFillButtonState();
+      } else {
+        // Populate the dropdown
+        populateProfileSelect(availableProfiles);
+        console.log("✅ Profiles mode initialized successfully");
+      }
     } catch (error) {
       console.error("Error initializing profiles mode:", error);
-      showStatus("Erreur lors du chargement des profils", "error");
+      showStatus("No data", "error");
+      profileSelect.innerHTML = '<option value="">Aucune donnée</option>';
+      currentUserData = null;
+      hideUserProfile();
+      await updateFillButtonState();
     }
   }
 
@@ -918,11 +906,6 @@ document.addEventListener("DOMContentLoaded", function () {
           sourceIcon = '📦';
           sourceText = ' (Cache)';
           option.className = 'cache-profile';
-          break;
-        case 'local':
-          sourceIcon = '📝';
-          sourceText = ' (Local)';
-          option.className = 'local-profile';
           break;
         default:
           sourceIcon = '❓';
@@ -1046,9 +1029,6 @@ document.addEventListener("DOMContentLoaded", function () {
         case 'cache':
           userProfileDisplay.classList.add('cache-source');
           break;
-        case 'local':
-          userProfileDisplay.classList.add('local-source');
-          break;
       }
     } else if (currentMode === 'csv' && profilesSource === 'csv-upload') {
       userProfileDisplay.classList.add('csv-upload-source');
@@ -1076,9 +1056,6 @@ document.addEventListener("DOMContentLoaded", function () {
             break;
           case 'cache':
             badgeText = 'CACHE';
-            break;
-          case 'local':
-            badgeText = 'LOCAL';
             break;
           default:
             badgeText = '?';

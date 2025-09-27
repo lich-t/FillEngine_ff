@@ -13,7 +13,7 @@
 
   "web_accessible_resources": [
     {
-      "resources": ["profiles.csv"],
+      "resources": [],
       "matches": ["<all_urls>"]
     }
   ],
