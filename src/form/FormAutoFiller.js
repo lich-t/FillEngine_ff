@@ -249,17 +249,23 @@ class FormAutoFiller {
 		// Automatically highlight unfilled fields after form filling
 		this.highlightUnfilledFields();
 
-		// After form filling is complete, process file upload fields
-		Logger.info("Form filling completed, now processing file upload fields...");
+		// After form filling is complete, check and fill dictionary-based checkboxes
+		Logger.info("Form filling completed, now checking dictionary-based checkboxes...");
+		const dictionaryCheckboxesChecked = FieldFiller.checkAllDictionaryCheckboxes();
+		Logger.info(`Dictionary-based checkbox verification completed: ${dictionaryCheckboxesChecked} checkbox(es) checked`);
+
+		// Then process file upload fields
+		Logger.info("Now processing file upload fields...");
 		await this.processFileUploadFields();
 
 		// Note: Automatic clicking of "Ajouter un fichier" button has been removed
 
 		return {
 			success: true,
-			message: `Analysé ${this.statistics.fieldsDetected} questions - Rempli ${this.statistics.fieldsFilled} champs (${overallSuccessRate}%) - Puis traité ${this.statistics.fileUploadProcessed} fichiers upload`,
+			message: `Analysé ${this.statistics.fieldsDetected} questions - Rempli ${this.statistics.fieldsFilled} champs (${overallSuccessRate}%) - Coche ${dictionaryCheckboxesChecked} cases automatiques - Puis traité ${this.statistics.fileUploadProcessed} fichiers upload`,
 			fieldsDetected: this.statistics.fieldsDetected,
 			fieldsFilled: this.statistics.fieldsFilled,
+			dictionaryCheckboxesChecked: dictionaryCheckboxesChecked,
 			supportedFields: supportedFields,
 			unsupportedFields: unsupportedFields,
 			fieldsWithoutInput: fieldsWithoutInput,

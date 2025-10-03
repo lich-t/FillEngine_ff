@@ -1087,6 +1087,300 @@ class FieldFiller {
 		Logger.debug(`❌ No match found for "${targetValue}" with "${labelValue}"`);
 		return false;
 	}
+
+	/**
+	 * Vérifie et coche automatiquement toutes les cases à cocher basées sur les données du dictionnaire
+	 * Utilise les valeurs de USER_PROFILE.choices, USER_PROFILE.misc et USER_PROFILE.medical pour déterminer quelles cases cocher
+	 */
+	static checkAllDictionaryCheckboxes() {
+		try {
+			Logger.debug("🔍 Recherche et vérification de toutes les cases à cocher basées sur le dictionnaire...");
+			
+			if (!USER_PROFILE) {
+				Logger.debug("USER_PROFILE non disponible, arrêt de la vérification des checkbox");
+				return 0;
+			}
+
+			const checkboxData = {};
+
+			// Champs de USER_PROFILE.choices
+			if (USER_PROFILE.choices) {
+				// hasDisabilities - cas spécial pour "aucun"
+				if (USER_PROFILE.choices.hasDisabilities !== undefined) {
+					checkboxData.hasDisabilities = {
+						value: USER_PROFILE.choices.hasDisabilities,
+						variations: ["handicapts", "handicap", "difficultés", "difficultes", "besoins particuliers"],
+						searchForAucun: !USER_PROFILE.choices.hasDisabilities || USER_PROFILE.choices.hasDisabilities === "aucun"
+					};
+				}
+
+				// agreement
+				if (USER_PROFILE.choices.agreement !== undefined) {
+					checkboxData.agreement = {
+						value: USER_PROFILE.choices.agreement,
+						variations: ["engagement sur l'honneur", "engagement sur honneur", "cochez la case", "j'engage ma responsabilité", "je confirme", "j'accepte"]
+					};
+				}
+
+				// termsAccepted
+				if (USER_PROFILE.choices.termsAccepted !== undefined) {
+					checkboxData.termsAccepted = {
+						value: USER_PROFILE.choices.termsAccepted,
+						variations: ["conditions d'utilisation", "conditions utilisation", "règles de confidentialité", "regles confidentialite", "accepter les conditions", "accepte les termes"]
+					};
+				}
+
+				// hasExperience
+				if (USER_PROFILE.choices.hasExperience !== undefined) {
+					checkboxData.hasExperience = {
+						value: USER_PROFILE.choices.hasExperience,
+						variations: ["expérience", "experience", "avez-vous de l'expérience", "avez vous de l'experience"]
+					};
+				}
+
+				// needsAccommodation
+				if (USER_PROFILE.choices.needsAccommodation !== undefined) {
+					checkboxData.needsAccommodation = {
+						value: USER_PROFILE.choices.needsAccommodation,
+						variations: ["besoin d'hébergement", "besoin d'hebergement", "accommodation", "logement"]
+					};
+				}
+
+				// isFirstTime
+				if (USER_PROFILE.choices.isFirstTime !== undefined) {
+					checkboxData.isFirstTime = {
+						value: USER_PROFILE.choices.isFirstTime,
+						variations: ["première fois", "premiere fois", "first time", "première inscription", "premiere inscription"]
+					};
+				}
+
+				// preferredLanguage
+				if (USER_PROFILE.choices.preferredLanguage !== undefined) {
+					checkboxData.preferredLanguage = {
+						value: USER_PROFILE.choices.preferredLanguage,
+						variations: ["langue préférée", "langue preferee", "preferred language", "langue d'examen", "langue d'examens"]
+					};
+				}
+
+				// idType - pour les cases à cocher de type de document
+				if (USER_PROFILE.choices.idType !== undefined) {
+					checkboxData.idType = {
+						value: USER_PROFILE.choices.idType,
+						variations: ["cni", "carte nationale", "passeport", "passport", "type de piece d'identité", "type de pièce d'identité"]
+					};
+				}
+
+				// gender/sex - pour les cases à cocher de genre
+				if (USER_PROFILE.choices.gender !== undefined) {
+					checkboxData.gender = {
+						value: USER_PROFILE.choices.gender,
+						variations: ["femme", "homme", "feminin", "masculin", "female", "male"]
+					};
+				}
+				if (USER_PROFILE.choices.sex !== undefined) {
+					checkboxData.sex = {
+						value: USER_PROFILE.choices.sex,
+						variations: ["femme", "homme", "feminin", "masculin", "female", "male"]
+					};
+				}
+			}
+
+			// Champs de USER_PROFILE.misc
+			if (USER_PROFILE.misc) {
+				// examSubjects - pour les cases à cocher des sujets d'examen
+				if (USER_PROFILE.misc.examSubjects !== undefined) {
+					checkboxData.examSubjects = {
+						value: USER_PROFILE.misc.examSubjects,
+						variations: ["compréhension écrite", "comprehension ecrite", "compréhension orale", "comprehension orale", "expression écrite", "expression ecrite", "expression orale"]
+					};
+				}
+
+				// examSubjectsFull - pour les cases à cocher des sujets d'examen complets
+				if (USER_PROFILE.misc.examSubjectsFull !== undefined) {
+					checkboxData.examSubjectsFull = {
+						value: USER_PROFILE.misc.examSubjectsFull,
+						variations: ["compréhension écrite", "comprehension ecrite", "compréhension orale", "comprehension orale", "expression écrite", "expression ecrite", "expression orale"]
+					};
+				}
+			}
+
+			// Champs de USER_PROFILE.medical
+			if (USER_PROFILE.medical) {
+				// disabilities - pour les cases à cocher de handicap
+				if (USER_PROFILE.medical.disabilities !== undefined) {
+					checkboxData.disabilities = {
+						value: USER_PROFILE.medical.disabilities,
+						variations: ["handicapts", "handicap", "difficultés", "difficultes", "besoins particuliers", "souffrez-vous d'un handicap"],
+						searchForAucun: !USER_PROFILE.medical.disabilities || USER_PROFILE.medical.disabilities === "aucun"
+					};
+				}
+			}
+
+			Logger.debug(`Configuration des cases à cocher: ${Object.keys(checkboxData).length} champs configurés`, Object.keys(checkboxData));
+
+			let checkedCount = 0;
+
+			// Rechercher toutes les cases à cocher Google Forms
+			const allCheckboxes = document.querySelectorAll('[role="checkbox"]');
+			Logger.debug(`Trouvé ${allCheckboxes.length} cases à cocher Google Forms au total`);
+
+			for (const [fieldName, fieldData] of Object.entries(checkboxData)) {
+				if (fieldData.value === undefined || fieldData.value === null) {
+					Logger.debug(`Valeur non définie pour ${fieldName}, ignoré`);
+					continue;
+				}
+
+				Logger.debug(`Traitement de ${fieldName}: valeur=${fieldData.value}, searchForAucun=${fieldData.searchForAucun}`);
+
+				for (const checkbox of allCheckboxes) {
+					try {
+						const label = this.getGoogleFormsLabel(checkbox);
+						const dataValue = checkbox.getAttribute("data-value") || checkbox.getAttribute("data-answer-value");
+						const ariaLabel = checkbox.getAttribute("aria-label");
+						const ariaChecked = checkbox.getAttribute("aria-checked");
+
+						if (!label && !dataValue && !ariaLabel) continue;
+
+						const labelValue = label ? label.toLowerCase().trim() : "";
+						const dataValueLower = dataValue ? dataValue.toLowerCase().trim() : "";
+						const ariaLabelLower = ariaLabel ? ariaLabel.toLowerCase().trim() : "";
+
+						// Vérifier si cette case correspond aux variations de ce champ
+						let shouldCheck = false;
+						let matchReason = "";
+
+						if (fieldData.searchForAucun) {
+							// Rechercher les cases "aucun" pour hasDisabilities/disabilities
+							if (dataValueLower === "aucun" || ariaLabelLower === "aucun") {
+								shouldCheck = true;
+								matchReason = "data-answer-value/aria-label='aucun'";
+							}
+						} else if (fieldData.value === true || fieldData.value === "true" || fieldData.value === "oui" || fieldData.value === "yes") {
+							// Rechercher les cases correspondant aux variations pour les valeurs booléennes positives
+							for (const variation of fieldData.variations) {
+								const variationLower = variation.toLowerCase().trim();
+								if (labelValue.includes(variationLower) || 
+									dataValueLower.includes(variationLower) || 
+									ariaLabelLower.includes(variationLower)) {
+									shouldCheck = true;
+									matchReason = `variation '${variation}'`;
+									break;
+								}
+							}
+						} else if (typeof fieldData.value === "string" && fieldData.value.trim() !== "") {
+							// Pour les valeurs textuelles (examSubjects, idType, gender, etc.)
+							const targetValue = fieldData.value.toLowerCase().trim();
+							
+							// Vérifier correspondance directe
+							if (labelValue === targetValue || 
+								dataValueLower === targetValue || 
+								ariaLabelLower === targetValue) {
+								shouldCheck = true;
+								matchReason = `valeur directe '${fieldData.value}'`;
+							} else {
+								// Vérifier correspondance avec les variations
+								for (const variation of fieldData.variations) {
+									const variationLower = variation.toLowerCase().trim();
+									if (labelValue.includes(variationLower) || 
+										dataValueLower.includes(variationLower) || 
+										ariaLabelLower.includes(variationLower)) {
+										// Vérifier si la valeur correspond à cette variation
+										if (this.isCheckboxValueMatch(targetValue, variationLower) ||
+											this.isRadioValueMatch(targetValue, variationLower)) {
+											shouldCheck = true;
+											matchReason = `correspondance '${fieldData.value}' avec '${variation}'`;
+											break;
+										}
+									}
+								}
+							}
+						} else if (Array.isArray(fieldData.value)) {
+							// Pour les valeurs de type array (examSubjects, examTypes, etc.)
+							for (const arrayValue of fieldData.value) {
+								const targetValue = String(arrayValue).toLowerCase().trim();
+								
+								// Vérifier correspondance directe
+								if (labelValue === targetValue || 
+									dataValueLower === targetValue || 
+									ariaLabelLower === targetValue) {
+									shouldCheck = true;
+									matchReason = `valeur array directe '${arrayValue}'`;
+									break;
+								} else {
+									// Vérifier correspondance avec les variations
+									for (const variation of fieldData.variations) {
+										const variationLower = variation.toLowerCase().trim();
+										if (labelValue.includes(variationLower) || 
+											dataValueLower.includes(variationLower) || 
+											ariaLabelLower.includes(variationLower)) {
+											// Vérifier si la valeur correspond à cette variation
+											if (this.isCheckboxValueMatch(targetValue, variationLower) ||
+												this.isRadioValueMatch(targetValue, variationLower)) {
+												shouldCheck = true;
+												matchReason = `correspondance array '${arrayValue}' avec '${variation}'`;
+												break;
+											}
+										}
+									}
+								}
+								if (shouldCheck) break;
+							}
+						}
+
+						if (shouldCheck && ariaChecked === "false") {
+							Logger.info(`✅ Cochement automatique de la case ${fieldName} (${matchReason})`);
+							
+							// Cocher la case
+							checkbox.setAttribute("aria-checked", "true");
+							checkbox.click();
+
+							// Déclencher les événements nécessaires
+							const events = [
+								new MouseEvent("mousedown", { bubbles: true }),
+								new MouseEvent("mouseup", { bubbles: true }),
+								new MouseEvent("click", { bubbles: true }),
+								new Event("change", { bubbles: true }),
+								new Event("input", { bubbles: true })
+							];
+
+							events.forEach(event => {
+								try {
+									checkbox.dispatchEvent(event);
+								} catch (eventError) {
+									Logger.debug(`Erreur lors du déclenchement de l'événement ${event.type}:`, eventError.message);
+								}
+							});
+
+							// Mettre à jour les inputs cachés associés
+							const container = checkbox.closest('[role="group"]') || checkbox.parentElement;
+							const hiddenInput = container?.querySelector('input[type="checkbox"]');
+							if (hiddenInput) {
+								hiddenInput.checked = true;
+								hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
+							}
+
+							checkedCount++;
+							Logger.info(`✅ Case cochée avec succès (${checkedCount})`);
+							break; // Une seule case par type de champ
+						}
+					} catch (checkboxError) {
+						Logger.error(`Erreur lors du traitement d'une case à cocher: ${checkboxError.message}`);
+					}
+				}
+			}
+
+			if (checkedCount > 0) {
+				Logger.info(`✅ Vérification automatique terminée: ${checkedCount} case(s) cochée(s) basées sur le dictionnaire`);
+			} else {
+				Logger.debug("Aucune case à cocher à cocher automatiquement basée sur le dictionnaire");
+			}
+
+			return checkedCount;
+		} catch (error) {
+			Logger.error(`Erreur lors de la vérification des cases à cocher du dictionnaire: ${error.message}`);
+			return 0;
+		}
+	}
 }
 
 try {
