@@ -94,7 +94,7 @@ Vous gardez un contrôle total sur vos données :
 
 ### Firefox :
 - Version minimale : 109.0
-- ID de l'extension : fillengine@tigerdev.com
+- ID de l'extension : fillengine@lich-t.com
 - Permissions de collecte de données : Aucune requise
 
 ### Chrome :
@@ -123,9 +123,9 @@ Cette extension respecte le Règlement Général sur la Protection des Données 
 
 Pour toute question concernant cette politique de confidentialité :
 
-- **Email** : tigerdev@github.com
+- **Email** : otklicht@gmail.com
 - **GitHub** : https://github.com/lich-t/FillEngine_ff.git
-- **Auteur** : desiredev
+- **Auteur** : lich-t
 
 ## 12. Juridiction
 

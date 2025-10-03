@@ -231,9 +231,9 @@ Pour obtenir de l'aide :
 
 ## 📞 Contact
 
-- **Auteur** : desiredev
+- **Auteur** : lich-t
 - **GitHub** : https://github.com/lich-t/FillEngine_ff.git
-- **Email** : tigerdev@github.com
+- **Email** : otklicht@gmail.com
 
 ---
 
