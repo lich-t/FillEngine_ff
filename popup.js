@@ -33,15 +33,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // Auto-fill settings elements
   const autoFillEnabled = document.getElementById("autoFillEnabled");
 
-  console.log("🔧 DOM ELEMENTS FOUND:");
-  console.log("├── fillFormBtn:", !!fillFormBtn);
-  console.log("├── csvFileInput:", !!csvFileInput);
-  console.log("├── fileStatus:", !!fileStatus);
-  console.log("├── userProfileDisplay:", !!userProfileDisplay);
-  console.log("├── profileModeBtn:", !!profileModeBtn);
-  console.log("├── csvModeBtn:", !!csvModeBtn);
-  console.log("├── profileSelect:", !!profileSelect);
-  console.log("└── refreshProfilesBtn:", !!refreshProfilesBtn);
 
   // Configuration du stockage cloud
   const CLOUD_CONFIG = {
@@ -111,7 +102,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const settings = result.autoFillSettings || { enabled: true };
       
       autoFillEnabled.checked = settings.enabled;
-      console.log("🔧 Auto-fill settings loaded:", settings);
       
       return settings;
     } catch (error) {
@@ -130,7 +120,6 @@ document.addEventListener("DOMContentLoaded", function () {
       };
       
       await chrome.storage.local.set({ autoFillSettings: settings });
-      console.log("💾 Auto-fill settings saved:", settings);
     } catch (error) {
       console.error("Error saving auto-fill settings:", error);
     }
@@ -150,7 +139,6 @@ document.addEventListener("DOMContentLoaded", function () {
       };
 
       await chrome.storage.local.set({ appState: state });
-      console.log("💾 State saved:", state);
     } catch (error) {
       console.error("Error saving state:", error);
     }
@@ -166,10 +154,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const state = result.appState;
 
       if (state) {
-        console.log("📖 State loaded:", state);
         return state;
       } else {
-        console.log("📖 No saved state found, using defaults");
         return null;
       }
     } catch (error) {
@@ -184,7 +170,6 @@ document.addEventListener("DOMContentLoaded", function () {
   async function clearState() {
     try {
       await chrome.storage.local.remove("appState");
-      console.log("🗑️ State cleared");
     } catch (error) {
       console.error("Error clearing state:", error);
     }
@@ -198,15 +183,10 @@ document.addEventListener("DOMContentLoaded", function () {
       const savedState = await loadState();
 
       if (!savedState) {
-        console.log("📝 No saved state found, using defaults");
         // Save initial state
         await saveState(null, currentMode);
         return;
       }
-
-      console.log("🔄 Restoring saved state...");
-      console.log(`├── Restoring mode: ${savedState.mode}`);
-      console.log(`└── Restoring selected profile: ${savedState.selectedProfileId}`);
 
       // Restore mode
       if (savedState.mode && savedState.mode !== currentMode) {
@@ -223,9 +203,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (profileOption) {
           profileSelect.value = savedState.selectedProfileId;
           handleProfileSelection(savedState.selectedProfileId);
-          console.log(`✅ Restored profile: ${savedState.selectedProfileId}`);
-        } else {
-          console.warn(`Profile ${savedState.selectedProfileId} not found in available profiles`);
         }
       }
     } catch (error) {
@@ -256,31 +233,22 @@ document.addEventListener("DOMContentLoaded", function () {
       const cachedVersion = result[CLOUD_CONFIG.versionKey];
       const lastUpdate = result[CLOUD_CONFIG.lastUpdateKey];
       
-      console.log("🔍 Checking if profile update needed:");
-      console.log("├── Current extension version:", currentExtensionVersion);
-      console.log("├── Cached version:", cachedVersion);
-      console.log("└── Last update:", lastUpdate ? new Date(lastUpdate).toISOString() : "Never");
-      
       // Mise à jour nécessaire si :
       // 1. Pas de version en cache
       // 2. Version de l'extension différente
       // 3. Cache expiré (7j)
       if (!cachedVersion) {
-        console.log("📥 Update needed: No cached version");
         return true;
       }
       
       if (cachedVersion !== currentExtensionVersion) {
-        console.log("📥 Update needed: Extension version changed");
         return true;
       }
       
       if (!lastUpdate || (Date.now() - lastUpdate) > CLOUD_CONFIG.cacheExpiration) {
-        console.log("📥 Update needed: Cache expired");
         return true;
       }
       
-      console.log("✅ No update needed: Cache is valid");
       return false;
     } catch (error) {
       console.error("Error checking update necessity:", error);
@@ -298,7 +266,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const cachedProfiles = result[CLOUD_CONFIG.cacheKey];
       
       if (cachedProfiles && Array.isArray(cachedProfiles)) {
-        console.log("📦 Loaded profiles from cache:", cachedProfiles.length, "profiles");
         profilesSource = 'cache';
         profileSourceMetadata = {
           loadedAt: Date.now(),
@@ -309,7 +276,6 @@ document.addEventListener("DOMContentLoaded", function () {
         return cachedProfiles;
       }
       
-      console.log("📦 No valid profiles found in cache");
       return null;
     } catch (error) {
       console.error("Error loading profiles from cache:", error);
@@ -331,11 +297,6 @@ document.addEventListener("DOMContentLoaded", function () {
         [CLOUD_CONFIG.versionKey]: currentVersion,
         [CLOUD_CONFIG.lastUpdateKey]: now
       });
-      
-      console.log("💾 Profiles saved to cache:");
-      console.log("├── Profiles count:", profiles.length);
-      console.log("├── Version:", currentVersion);
-      console.log("└── Timestamp:", new Date(now).toISOString());
     } catch (error) {
       console.error("Error saving profiles to cache:", error);
     }
@@ -347,10 +308,7 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   async function loadProfilesFromCloud() {
     try {
-      console.log("☁️ Loading profiles from cloud storage...");
-      
       const profilesUrl = `${CLOUD_CONFIG.baseUrl}/${CLOUD_CONFIG.profilesFile}`;
-      console.log("├── URL:", profilesUrl);
       
       const response = await fetch(profilesUrl, {
         method: 'GET',
@@ -365,14 +323,12 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       
       const csvContent = await response.text();
-      console.log("├── Content length:", csvContent.length);
       
       if (!csvContent || csvContent.trim().length === 0) {
         throw new Error("Empty response from cloud storage");
       }
       
       const profiles = parseProfilesCSV(csvContent);
-      console.log("✅ Profiles loaded from cloud:", profiles.length, "profiles");
       
       profilesSource = 'cloud';
       profileSourceMetadata = {
@@ -396,8 +352,6 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   async function loadProfilesDatabase() {
     try {
-      console.log("🚀 Loading profiles database...");
-      
       // Vérifier si une mise à jour est nécessaire
       const needsUpdate = await shouldUpdateProfiles();
       
@@ -405,13 +359,11 @@ document.addEventListener("DOMContentLoaded", function () {
         // Utiliser le cache si disponible
         const cachedProfiles = await loadProfilesFromCache();
         if (cachedProfiles) {
-          console.log("✅ Using cached profiles");
           return cachedProfiles;
         }
       }
       
       // Charger depuis le cloud
-      console.log("☁️ Loading fresh profiles from cloud...");
       const cloudProfiles = await loadProfilesFromCloud();
       
       // Sauvegarder en cache
@@ -420,18 +372,14 @@ document.addEventListener("DOMContentLoaded", function () {
       return cloudProfiles;
       
     } catch (cloudError) {
-      console.warn("⚠️ Cloud loading failed, trying cache fallback...");
-      
       // Fallback vers le cache en cas d'erreur cloud
       const cachedProfiles = await loadProfilesFromCache();
       if (cachedProfiles) {
-        console.log("🔄 Using cached profiles as fallback");
         profileSourceMetadata.fallbackUsed = true;
         return cachedProfiles;
       }
       
       // Si aucun fallback disponible (pas de fichier local)
-      console.error("❌ No profiles available from cloud or cache");
       throw new Error("Aucune donnée");
     }
   }
@@ -453,8 +401,6 @@ document.addEventListener("DOMContentLoaded", function () {
         showStatus("Mise à jour des profils...", "info");
       }
       
-      console.log("🔄 Forcing profiles refresh from cloud...");
-      
       // Vider le cache pour forcer le rechargement
       await chrome.storage.local.remove([
         CLOUD_CONFIG.cacheKey,
@@ -475,8 +421,6 @@ document.addEventListener("DOMContentLoaded", function () {
         showStatus(`✅ Profils mis à jour: ${availableProfiles.length} profils chargés`, "success");
         setTimeout(() => hideStatus(), 3000);
       }
-      
-      console.log("✅ Profiles refreshed successfully:", availableProfiles.length, "profiles");
       
     } catch (error) {
       console.error("Error refreshing profiles:", error);
@@ -511,14 +455,10 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   async function checkAndTriggerAutoRefresh() {
     try {
-      console.log("🔍 Checking for extension update...");
-      
       // Vérifier si l'extension a été mise à jour via background.js
       const extensionUpdateCheck = await chrome.storage.local.get(['extensionUpdated', 'updateTimestamp']);
       
       if (extensionUpdateCheck.extensionUpdated) {
-        console.log("🔄 Extension update flag detected, forcing refresh...");
-        
         // Nettoyer le flag de mise à jour
         await chrome.storage.local.remove(['extensionUpdated', 'updateTimestamp']);
         
@@ -536,8 +476,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const needsUpdate = await shouldUpdateProfiles();
       
       if (needsUpdate) {
-        console.log("🔄 Standard update needed, triggering auto-refresh...");
-        
         // Déclencher le rafraîchissement automatique (sans feedback visuel excessif)
         await forceRefreshProfiles(false);
         
@@ -548,7 +486,6 @@ document.addEventListener("DOMContentLoaded", function () {
         return true;
       }
       
-      console.log("✅ No extension update detected");
       return false;
       
     } catch (error) {
@@ -557,35 +494,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
   window.debugCloudProfiles = async function() {
-    console.log("🧪 === DEBUG CLOUD PROFILES ===");
-    console.log("📍 URL:", `${CLOUD_CONFIG.baseUrl}/${CLOUD_CONFIG.profilesFile}`);
-    
     try {
       // Test de connectivité
-      console.log("🔄 Testing cloud connectivity...");
       const testResponse = await fetch(`${CLOUD_CONFIG.baseUrl}/${CLOUD_CONFIG.profilesFile}`, {
         method: 'HEAD'
       });
-      console.log("📊 HEAD Status:", testResponse.status, testResponse.statusText);
       
       // Test de chargement complet
-      console.log("🔄 Testing full load...");
       const profiles = await loadProfilesFromCloud();
-      console.log("✅ Profiles loaded:", profiles.length);
-      console.log("📋 First profile:", profiles[0]);
       
       return profiles;
     } catch (error) {
-      console.error("❌ Debug failed:", error);
-      
       // Test fallback cache
-      console.log("🔄 Testing cache fallback...");
       const cached = await loadProfilesFromCache();
       if (cached) {
-        console.log("✅ Cache fallback works:", cached.length, "profiles");
         return cached;
-      } else {
-        console.log("❌ No cache available");
       }
       
       throw error;
@@ -631,16 +554,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const headers = parseCSVLine(lines[0]);
       const profiles = [];
 
-      console.log("📋 CSV Headers found:", headers);
-
       // Parse each profile line
       for (let i = 1; i < lines.length; i++) {
         const values = parseCSVLine(lines[i]);
 
         if (headers.length !== values.length) {
-          console.warn(
-            `Ligne ${i + 1}: Nombre d'en-têtes (${headers.length}) ne correspond pas au nombre de valeurs (${values.length})`
-          );
           continue;
         }
 
@@ -650,7 +568,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
-      console.log(`✅ Parsed ${profiles.length} profiles from database`);
       return profiles;
     } catch (error) {
       console.error("Erreur de parsing du CSV des profils:", error);
@@ -728,22 +645,17 @@ document.addEventListener("DOMContentLoaded", function () {
       // Populate user profile
       let fieldsProcessed = 0;
       headers.forEach((header, index) => {
-        console.log(`Processing field ${index}: ${header} = "${values[index]}"`);
         const mapping = fieldMapping[header];
         if (mapping && values[index] !== undefined && values[index] !== "") {
           let value = values[index];
 
           // Handle special data types
           if ((header === "examTypes" || header === "examSubjects") && value.includes(",")) {
-            console.log(`Splitting comma-separated value for ${header}: "${value}"`);
             value = value.split(",").map((v) => v.trim());
-            console.log(`Result after split:`, value);
           } else if (["agreement", "termsAccepted", "hasExperience", "needsAccommodation", "isFirstTime"].includes(header)) {
-            console.log(`Converting boolean for ${header}: "${value}" -> ${value.toLowerCase() === "true"}`);
             value = value.toLowerCase() === "true";
           } else if (header === "hasDisabilities") {
             // Special handling for hasDisabilities - can be boolean or text description
-            console.log(`Processing hasDisabilities: "${value}"`);
             if (value.toLowerCase() === "true" || value.toLowerCase() === "false") {
               value = value.toLowerCase() === "true";
             } else if (value.toLowerCase() === "aucun" || value.toLowerCase() === "none") {
@@ -752,7 +664,6 @@ document.addEventListener("DOMContentLoaded", function () {
               // Keep as text if it's a description
               value = value;
             }
-            console.log(`hasDisabilities result:`, value);
           }
 
           if (mapping.length === 1) {
@@ -771,30 +682,19 @@ document.addEventListener("DOMContentLoaded", function () {
               };
               const fullNames = value.map((code) => examTypesMapping[code] || code);
               userProfile[category]["examTypesFull"] = fullNames;
-              console.log(`Auto-created examTypesFull:`, fullNames);
             }
 
             // Auto-create examSubjectsFull when examSubjects is processed
             if (field === "examSubjects" && Array.isArray(value)) {
               userProfile.misc["examSubjectsFull"] = value;
-              console.log(`Auto-created examSubjectsFull:`, value);
             }
           }
           fieldsProcessed++;
-          console.log(`✅ Processed field ${header}, total: ${fieldsProcessed}`);
-        } else if (mapping) {
-          console.log(`⚠️ Empty value for field: ${header}`);
-        } else {
-          console.warn(`❌ Unknown field in CSV: ${header}`);
         }
       });
 
-      console.log(`Successfully processed ${fieldsProcessed} fields from CSV`);
-      console.log("Final user profile:", userProfile);
-
       // For CSV upload mode, we don't need an ID, so only check if we have processed fields
       if (fieldsProcessed === 0) {
-        console.warn("Profil ignoré: aucun champ valide trouvé");
         return null;
       }
 
@@ -822,15 +722,11 @@ document.addEventListener("DOMContentLoaded", function () {
       csvModeBtn.classList.remove("active");
       profileSection.classList.remove("hidden");
       csvSection.classList.add("hidden");
-
-      console.log("🔄 Switched to profiles mode");
     } else {
       csvModeBtn.classList.add("active");
       profileModeBtn.classList.remove("active");
       csvSection.classList.remove("hidden");
       profileSection.classList.add("hidden");
-
-      console.log("🔄 Switched to CSV upload mode");
     }
 
     // Reset current data when switching modes
@@ -847,8 +743,6 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   async function initializeProfilesMode() {
     try {
-      console.log("🚀 Initializing profiles mode...");
-
       // Load profiles from database
       availableProfiles = await loadProfilesDatabase();
 
@@ -861,7 +755,6 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         // Populate the dropdown
         populateProfileSelect(availableProfiles);
-        console.log("✅ Profiles mode initialized successfully");
       }
     } catch (error) {
       console.error("Error initializing profiles mode:", error);
@@ -924,8 +817,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       profileSelect.appendChild(option);
     });
-
-    console.log(`✅ Populated profile selector with ${profiles.length} profiles from ${profilesSource}`);
   }
 
   /**
@@ -951,11 +842,6 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const profile = JSON.parse(selectedOption.dataset.profile);
       currentUserData = profile;
-
-      console.log("✅ Profile selected:", profile.id);
-      console.log("├── Name:", profile.personal?.fullName);
-      console.log("├── Email:", profile.contact?.email);
-      console.log("└── Profession:", profile.professional?.profession);
 
       // Update main profile display
       updateProfileDisplay(profile);
@@ -1073,8 +959,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     
     userProfileDisplay.style.display = "block";
-
-    console.log("✅ Profile display updated with source:", profilesSource);
   }
 
   /**
@@ -1103,13 +987,7 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   async function updateFillButtonState() {
     try {
-      console.log("🔄 Updating button state...");
-      console.log("├── Current mode:", currentMode);
-      console.log("├── Current user data exists:", !!currentUserData);
-      console.log("└── User data:", currentUserData);
-
       const isFormsPage = await isGoogleFormsPage();
-      console.log("├── Is Google Forms page:", isFormsPage);
 
       if (!isFormsPage) {
         fillFormBtn.disabled = true;
@@ -1117,7 +995,6 @@ document.addEventListener("DOMContentLoaded", function () {
         fillFormBtn.style.color = "#9ca3af";
         fillFormBtn.title = "Naviguez vers une page Google Forms";
         showStatus("Page Google Forms requise", "error");
-        console.log("❌ Button disabled: Not on Google Forms page");
       } else if (!currentUserData) {
         fillFormBtn.disabled = true;
         fillFormBtn.style.background = "#f1f3f5";
@@ -1129,14 +1006,12 @@ document.addEventListener("DOMContentLoaded", function () {
           if (!statusDiv.textContent || statusDiv.style.display === "none") {
             showStatus("Sélectionnez un profil pour continuer", "info");
           }
-          console.log("❌ Button disabled: No profile selected");
         } else {
           fillFormBtn.title = "Chargez d'abord un fichier CSV";
           // Only show status if no other status is currently displayed
           if (!statusDiv.textContent || statusDiv.style.display === "none") {
             showStatus("Chargez un fichier CSV pour continuer", "info");
           }
-          console.log("❌ Button disabled: No CSV data");
         }
       } else {
         fillFormBtn.disabled = false;
@@ -1144,7 +1019,6 @@ document.addEventListener("DOMContentLoaded", function () {
         fillFormBtn.style.color = "";
         fillFormBtn.title = "";
         hideStatus();
-        console.log("✅ Button enabled: Ready to fill form");
       }
     } catch (error) {
       console.error("Error updating button state:", error);
@@ -1181,8 +1055,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    console.log("📄 CSV file selected:", file.name, `(${file.size} bytes)`);
-
     // Validate file type
     if (!file.name.toLowerCase().endsWith(".csv")) {
       showStatus("Veuillez sélectionner un fichier CSV", "error");
@@ -1198,13 +1070,11 @@ document.addEventListener("DOMContentLoaded", function () {
     reader.onload = async function (e) {
       try {
         const csvContent = e.target.result;
-        console.log("📄 CSV content loaded, parsing...");
 
         const userData = parseCSV(csvContent);
 
         if (userData) {
           currentUserData = userData;
-          console.log("✅ CSV parsed successfully:", userData);
 
           // Set source for CSV upload
           profilesSource = 'csv-upload';
@@ -1218,7 +1088,6 @@ document.addEventListener("DOMContentLoaded", function () {
           // Save CSV data to cache for automatic filling
           try {
             await chrome.storage.local.set({ lastCsvData: userData });
-            console.log("💾 CSV data saved to cache for auto-fill");
           } catch (cacheError) {
             console.warn("Failed to save CSV data to cache:", cacheError);
           }
@@ -1277,7 +1146,6 @@ document.addEventListener("DOMContentLoaded", function () {
         .trim()
         .split("\n")
         .filter((line) => line.trim().length > 0);
-      console.log(`📋 CSV Lines found: ${lines.length}`);
 
       if (lines.length < 2) {
         throw new Error("CSV doit contenir au moins 2 lignes (en-tête + données)");
@@ -1329,20 +1197,13 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const headers = parseCSVLine(lines[0]);
-      console.log("📋 CSV Headers:", headers);
-      console.log(`📋 Headers count: ${headers.length}`);
 
       // Parse all data lines (skip header)
       const allUserData = [];
       for (let i = 1; i < lines.length; i++) {
         const values = parseCSVLine(lines[i]);
-        console.log(`📋 CSV Line ${i} Values (first 5):`, values.slice(0, 5));
-        console.log(`📋 Line ${i} - Headers: ${headers.length}, Values: ${values.length}`);
 
         if (headers.length !== values.length) {
-          console.error(`Line ${i} mismatch details:`);
-          console.error("Headers:", headers);
-          console.error("Values:", values);
           throw new Error(
             `Ligne ${i}: Nombre d'en-têtes (${headers.length}) ne correspond pas au nombre de valeurs (${values.length})`
           );
@@ -1356,7 +1217,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         allUserData.push(userData);
-        console.log(`✅ Parsed user data line ${i}:`, userData);
       }
 
       // For now, return the first user data (single user mode)
@@ -1365,7 +1225,6 @@ document.addEventListener("DOMContentLoaded", function () {
         throw new Error("Aucune donnée utilisateur trouvée");
       }
 
-      console.log(`✅ Successfully parsed ${allUserData.length} user record(s)`);
       return allUserData[0]; // Return first profile for now
     } catch (error) {
       console.error("Erreur de parsing CSV:", error);
@@ -1399,9 +1258,6 @@ document.addEventListener("DOMContentLoaded", function () {
       showStatus("Remplissage du formulaire en cours...", "info");
       hideResults();
 
-      console.log("🚀 Starting form fill process");
-      console.log("User data:", currentUserData);
-
       // Send message to content script
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -1411,8 +1267,6 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       if (response && response.success) {
-        console.log("✅ Form filled successfully");
-        console.log("Results:", response.results);
 
         // Update UI with results - note: response.results should be the stats object
         let resultsData = null;
@@ -1482,15 +1336,10 @@ document.addEventListener("DOMContentLoaded", function () {
     statsDiv.style.display = "block";
     
     // Auto-close popup logic based on unfilled fields count
-    console.log(`📊 Unfilled fields count: ${unfilledFields}`);
-    
     if (unfilledFields === 2) {
-      console.log('🔄 Auto-closing popup immediately (unfilled count = 2)');
       window.close();
     } else if (unfilledFields > 2) {
-      console.log(`🔄 Auto-closing popup in 2 seconds (unfilled count = ${unfilledFields})`);
       setTimeout(() => {
-        console.log('🔄 Executing delayed popup close');
         window.close();
       }, 2000);
     }
@@ -1583,8 +1432,6 @@ document.addEventListener("DOMContentLoaded", function () {
    * Initialize the popup
    */
   async function initialize() {
-    console.log("🚀 Initializing popup...");
-
     // Keep popup open during operations
     keepPopupOpen();
 
@@ -1606,14 +1453,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Add profile selection handler
     profileSelect.addEventListener("change", (e) => {
-      console.log("📋 Profile selection changed:", e.target.value);
       handleProfileSelection(e.target.value);
     });
 
     // Add refresh profiles button handler
     if (refreshProfilesBtn) {
       refreshProfilesBtn.addEventListener("click", () => {
-        console.log("🔄 Refresh profiles button clicked");
         forceRefreshProfiles(true);
       });
     }
@@ -1629,8 +1474,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Initial button state update
     await updateFillButtonState();
-
-    console.log("✅ Popup initialized successfully");
   }
 
   // Initialize the popup
@@ -1642,7 +1485,6 @@ document.addEventListener("DOMContentLoaded", function () {
    * Accessible depuis la console : window.forceRefreshProfiles()
    */
   window.forceRefreshProfiles = async function() {
-    console.log("🔄 === FORCE REFRESH PROFILES (MANUAL) ===");
     await forceRefreshProfiles(true);
   };
 
@@ -1651,39 +1493,6 @@ document.addEventListener("DOMContentLoaded", function () {
    * Accessible depuis la console : window.getProfilesSourceInfo()
    */
   window.getProfilesSourceInfo = function() {
-    console.log("📊 === PROFILES SOURCE INFO ===");
-    console.log("├── Current source:", profilesSource);
-    console.log("├── Metadata:", profileSourceMetadata);
-    console.log("├── Available profiles:", availableProfiles.length);
-    console.log("└── Cloud status:", cloudProfilesStatus);
-    return {
-      source: profilesSource,
-      metadata: profileSourceMetadata,
-      profilesCount: availableProfiles.length,
-      cloudStatus: cloudProfilesStatus
-    };
-  };
-
-  // Exposer les fonctions utilitaires pour le debug et le rafraîchissement manuel
-  /**
-   * Fonction exposée pour forcer le rafraîchissement depuis la console
-   * Accessible depuis la console : window.forceRefreshProfiles()
-   */
-  window.forceRefreshProfiles = async function() {
-    console.log("🔄 === FORCE REFRESH PROFILES (MANUAL) ===");
-    await forceRefreshProfiles(true);
-  };
-
-  /**
-   * Fonction pour obtenir les informations sur la source des profils
-   * Accessible depuis la console : window.getProfilesSourceInfo()
-   */
-  window.getProfilesSourceInfo = function() {
-    console.log("📊 === PROFILES SOURCE INFO ===");
-    console.log("├── Current source:", profilesSource);
-    console.log("├── Metadata:", profileSourceMetadata);
-    console.log("├── Available profiles:", availableProfiles.length);
-    console.log("└── Cloud status:", cloudProfilesStatus);
     return {
       source: profilesSource,
       metadata: profileSourceMetadata,

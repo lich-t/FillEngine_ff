@@ -39,7 +39,6 @@ function injectHighlightStyles() {
 	`;
 	
 	document.head.appendChild(style);
-	console.log('[AutoFill] Highlight styles injected');
 }
 
 // Inject styles immediately when content script loads
@@ -47,51 +46,12 @@ injectHighlightStyles();
 
 // DEBUG: Add manual test function for file upload detection
 window.testFileUploadDetection = function() {
-	console.log('🧪 Testing file upload detection manually...');
-	console.log('Available selectors:', CONFIG.fileUploadSelectors);
-	
 	const containers = FormDetector.findQuestionContainers();
-	console.log(`Found ${containers.length} containers:`, containers);
-	
-	containers.forEach((container, index) => {
-		const questionLabel = FormDetector.extractQuestionLabel(container);
-		const inputField = FormDetector.findInputField(container);
-		const isFileUpload = inputField && inputField.dataset && inputField.dataset.fieldType === 'fileupload';
-		
-		console.log(`Container ${index}:`, {
-			questionLabel,
-			inputField,
-			isFileUpload,
-			fieldType: inputField?.dataset?.fieldType,
-			container
-		});
-		
-		// Check each selector manually
-		CONFIG.fileUploadSelectors.forEach((selector, selectorIndex) => {
-			const element = container.querySelector(selector);
-			if (element) {
-				console.log(`  ✅ Selector ${selectorIndex + 1} ("${selector}") found element:`, element);
-				const isVisible = FormDetector.isElementVisible(element);
-				console.log(`  Visible: ${isVisible}`);
-			} else {
-				console.log(`  ❌ Selector ${selectorIndex + 1} ("${selector}") found nothing`);
-			}
-		});
-		
-		if (isFileUpload) {
-			console.log('🎯 File upload field detected!', {
-				question: questionLabel,
-				element: inputField,
-				expectedType: inputField.dataset.expectedFileType
-			});
-		}
-	});
 	
 	// Also test the direct detection method
 	if (autoFiller && autoFiller.detectFileUploadFieldsDirectly) {
-		console.log('⚙️ Testing direct file upload detection...');
 		const directResults = autoFiller.detectFileUploadFieldsDirectly();
-		console.log(`Direct detection found ${directResults.length} file upload fields:`, directResults);
+		return { containers, total: containers.length, fileUploadFields: directResults.length };
 	}
 	
 	return { containers, total: containers.length };
@@ -99,46 +59,8 @@ window.testFileUploadDetection = function() {
 
 // DEBUG: Simple test for "Ajouter un fichier" detection
 window.testSimpleFileUploadDetection = function() {
-	console.log('🔍 Simple test: Looking for "Ajouter un fichier" in div[role="listitem"]...');
-	
 	// Find all div[role="listitem"] containers
 	const containers = document.querySelectorAll('div[role="listitem"]');
-	console.log(`Found ${containers.length} div[role="listitem"] containers`);
-	
-	containers.forEach((container, index) => {
-		console.log(`\nContainer ${index + 1}:`);
-		console.log('  Container:', container);
-		
-		// Check if container contains "Ajouter un fichier" text
-		const hasAjouterText = container.textContent.includes('Ajouter un fichier');
-		console.log(`  Contains "Ajouter un fichier": ${hasAjouterText}`);
-		
-		if (hasAjouterText) {
-			// Find the exact element with the text
-			const allElements = container.querySelectorAll('*');
-			for (const element of allElements) {
-				if (element.textContent && element.textContent.includes('Ajouter un fichier')) {
-					console.log('  ✅ Found element with text:', element);
-					console.log('    Element tag:', element.tagName);
-					console.log('    Element role:', element.getAttribute('role'));
-					console.log('    Element class:', element.className);
-					console.log('    Element visible:', FormDetector.isElementVisible(element));
-					
-					// Check if parent has role="button"
-					const buttonParent = element.closest('[role="button"]');
-					if (buttonParent) {
-						console.log('    Button parent found:', buttonParent);
-						console.log('    Button visible:', FormDetector.isElementVisible(buttonParent));
-					}
-					break;
-				}
-			}
-			
-			// Try to get question label
-			const questionLabel = FormDetector.extractQuestionLabel(container);
-			console.log(`  Question label: "${questionLabel}"`);
-		}
-	});
 	
 	return {
 		totalContainers: containers.length,
@@ -148,11 +70,8 @@ window.testSimpleFileUploadDetection = function() {
 
 // DEBUG: Add manual test function for highlighting
 window.testHighlighting = function() {
-	console.log('🧪 Testing highlighting manually...');
-	
 	if (!autoFiller) {
-		console.error('❌ AutoFiller not available');
-		return;
+		return { error: 'AutoFiller not available' };
 	}
 	
 	// First, simulate form processing to populate detection results
@@ -182,15 +101,12 @@ window.testHighlighting = function() {
 					fieldCategory: fieldCategory,
 					hasInputField: true
 				});
-				console.log(`Added test result for: ${questionLabel} (${fieldCategory})`);
 			}
 		}
 	});
 	
 	// Now test highlighting
 	const result = autoFiller.highlightUnfilledFields();
-	console.log('Highlighting result:', result);
-	
 	return result;
 };
 
@@ -304,7 +220,6 @@ window.addEventListener('popstate', () => {
 });
 
 // Detect page type and initialize autofiller
-console.log("[AutoFill] Content init script loaded");
 // Ensure Logger binding exists even if Logger.js didn't load for any reason
 if (typeof Logger === "undefined") {
 	if (typeof globalThis.Logger === "undefined") {
@@ -319,14 +234,6 @@ if (typeof Logger === "undefined") {
 	// Create a real global binding for Logger so unqualified references work
 	var Logger = globalThis.Logger;
 }
-console.log("[AutoFill] Diagnostics:", {
-	hasLogger: typeof Logger !== "undefined",
-	hasCONFIG: typeof CONFIG !== "undefined",
-	hasDetect: typeof detectPageTypeAndAdaptConfig,
-	hasFormAutoFiller: typeof FormAutoFiller,
-	hasFormDetector: typeof FormDetector !== "undefined",
-	hasFieldFiller: typeof FieldFiller !== "undefined",
-});
 
 let pageType = "unknown";
 try {
@@ -453,45 +360,26 @@ function triggerDelayedAutoFill(delay = 1000) {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-	console.log("📥 CONTENT SCRIPT RECEIVED MESSAGE:", message);
-	console.log("├── Action:", message.action);
-	console.log("├── Has userData:", !!message.userData);
-	console.log("└── Message sender:", sender);
 	if (message.action === "fillForm") {
 		(async () => {
 			try {
 				if (message.userData) {
-					console.log("✅ CSV DATA RECEIVED IN CONTENT SCRIPT");
-					console.log("├── Data structure keys:", Object.keys(message.userData));
-					console.log("├── Personal data:", message.userData.personal);
-					console.log("├── Contact data:", message.userData.contact);
-					console.log("└── Full userData:", message.userData);
 					Logger.info("CSV data received in content script");
 					Logger.debug("CSV data structure:", Object.keys(message.userData));
-					console.log("🔄 CALLING updateUserProfile...");
 					autoFiller.updateUserProfile(message.userData);
-					console.log("🔍 USER_PROFILE AFTER UPDATE:");
-					console.log("├── Personal:", USER_PROFILE.personal);
-					console.log("├── Contact:", USER_PROFILE.contact);
-					console.log("└── Full USER_PROFILE:", USER_PROFILE);
 				} else {
-					console.log("❌ NO userData PROVIDED IN MESSAGE");
 					Logger.warn("No userData provided in message");
 				}
-				console.log("🚀 CALLING fillForm...");
 				if (!autoFiller) {
-					console.error("[AutoFill] autoFiller not initialized");
 					sendResponse({ success: false, error: "autoFiller not initialized" });
 					return;
 				}
 				// Call async fillForm method
 				const result = await autoFiller.fillForm();
-				console.log("📊 FORM FILL RESULT:", result);
 				Logger.info("Form fill result:", result);
 				// Conform to popup.js expectations: wrap stats in `results`
 				sendResponse({ success: !!result?.success, results: result });
 			} catch (error) {
-				console.error("❌ ERROR IN MESSAGE HANDLER:", error);
 				Logger.error("Error filling form:", error);
 				sendResponse({ success: false, message: "Error occurred while filling form: " + error.message });
 			}
@@ -503,34 +391,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 	} else if (message.action === "highlightUnfilledFields") {
 		try {
 			if (!autoFiller) {
-				console.error("[AutoFill] autoFiller not initialized for highlighting");
 				sendResponse({ success: false, error: "autoFiller not initialized" });
 				return true;
 			}
 			
 			const result = autoFiller.highlightUnfilledFields();
-			console.log("🎨 HIGHLIGHT RESULT:", result);
 			Logger.info("Highlight result:", result);
 			sendResponse({ success: !!result?.success, highlightedCount: result?.highlightedCount || 0 });
 		} catch (error) {
-			console.error("❌ ERROR IN HIGHLIGHT HANDLER:", error);
 			Logger.error("Error highlighting fields:", error);
 			sendResponse({ success: false, error: "Error occurred while highlighting: " + error.message });
 		}
 	} else if (message.action === "removeHighlights") {
 		try {
 			if (!autoFiller) {
-				console.error("[AutoFill] autoFiller not initialized for removing highlights");
 				sendResponse({ success: false, error: "autoFiller not initialized" });
 				return true;
 			}
 			
 			const result = autoFiller.removeHighlights();
-			console.log("🎨 REMOVE HIGHLIGHT RESULT:", result);
 			Logger.info("Remove highlight result:", result);
 			sendResponse({ success: !!result?.success, removedCount: result?.removedCount || 0 });
 		} catch (error) {
-			console.error("❌ ERROR IN REMOVE HIGHLIGHT HANDLER:", error);
 			Logger.error("Error removing highlights:", error);
 			sendResponse({ success: false, error: "Error occurred while removing highlights: " + error.message });
 		}
@@ -549,7 +431,6 @@ async function loadSavedUserData() {
 		const autoFillSettings = settingsResult.autoFillSettings || { enabled: true };
 		
 		if (!autoFillSettings.enabled) {
-			console.log('[AutoFill] Auto-fill disabled by user settings');
 			return null;
 		}
 
@@ -558,14 +439,8 @@ async function loadSavedUserData() {
 		const savedState = stateResult.appState;
 		
 		if (!savedState) {
-			console.log('[AutoFill] No saved state found for auto-fill');
 			return null;
 		}
-
-		console.log('[AutoFill] Loading saved user data for auto-fill...');
-		console.log('├── Saved mode:', savedState.mode);
-		console.log('├── Selected profile ID:', savedState.selectedProfileId);
-		console.log('└── State timestamp:', new Date(savedState.timestamp).toISOString());
 
 		if (savedState.mode === 'profiles' && savedState.selectedProfileId) {
 			// Load from profiles cache
@@ -581,13 +456,8 @@ async function loadSavedUserData() {
 			if (cachedProfiles && Array.isArray(cachedProfiles)) {
 				const selectedProfile = cachedProfiles.find(p => p.id === savedState.selectedProfileId);
 				if (selectedProfile) {
-					console.log('[AutoFill] ✅ Found cached profile for auto-fill:', selectedProfile.id);
 					return selectedProfile;
-				} else {
-					console.log('[AutoFill] ⚠️ Selected profile not found in cache');
 				}
-			} else {
-				console.log('[AutoFill] ⚠️ No cached profiles available');
 			}
 		} else if (savedState.mode === 'csv') {
 			// Load from CSV cache (if any)
@@ -595,10 +465,7 @@ async function loadSavedUserData() {
 			const lastCsvData = csvCacheResult.lastCsvData;
 			
 			if (lastCsvData) {
-				console.log('[AutoFill] ✅ Found cached CSV data for auto-fill');
 				return lastCsvData;
-			} else {
-				console.log('[AutoFill] ⚠️ No cached CSV data available');
 			}
 		}
 		
@@ -616,38 +483,28 @@ async function performAutoFill() {
 	try {
 		// Éviter les déclenchements multiples
 		if (hasTriggeredAutoFill) {
-			console.log('[AutoFill] Auto-fill already triggered, skipping');
 			return;
 		}
 
 		// Only auto-fill on Google Forms pages
 		if (pageType !== 'google-forms') {
-			console.log('[AutoFill] Auto-fill skipped: Not a Google Forms page');
 			return;
 		}
 		
 		// Load saved user data
 		const savedUserData = await loadSavedUserData();
 		if (!savedUserData) {
-			console.log('[AutoFill] Auto-fill skipped: No saved user data');
 			return;
 		}
 		
 		// Check if form elements are available
 		const containers = FormDetector.findQuestionContainers();
 		if (containers.length === 0) {
-			console.log('[AutoFill] Auto-fill skipped: No form elements found');
 			return;
 		}
 
 		// Marquer comme déclenché pour éviter les duplicatas
 		hasTriggeredAutoFill = true;
-		
-		console.log('[AutoFill] 🚀 Starting automatic form filling...');
-		console.log('├── Found', containers.length, 'form containers');
-		console.log('├── Using saved data from:', savedUserData.id || 'CSV upload');
-		console.log('├── Triggered via:', document.readyState);
-		console.log('└── Page type:', pageType);
 		
 		// Update user profile with saved data
 		if (autoFiller) {
@@ -660,25 +517,17 @@ async function performAutoFill() {
 				const filledCount = result.fieldsFilled || 0;
 				const totalCount = result.fieldsDetected || 0;
 				
-				console.log('[AutoFill] ✅ Automatic filling completed successfully!');
-				console.log(`├── Filled ${filledCount}/${totalCount} fields`);
-				console.log(`├── Success rate: ${result.overallSuccessRate || 0}%`);
-				console.log('└── File uploads:', result.fileUploadFields || 0);
-				
 				// Show a discrete notification
 				showAutoFillNotification(filledCount, totalCount);
 			} else {
-				console.log('[AutoFill] ⚠️ Automatic filling failed:', result?.message || 'Unknown error');
 				// Réinitialiser le flag en cas d'échec pour permettre une nouvelle tentative
 				hasTriggeredAutoFill = false;
 			}
 		} else {
-			console.error('[AutoFill] AutoFiller not available for automatic filling');
 			// Réinitialiser le flag en cas d'erreur
 			hasTriggeredAutoFill = false;
 		}
 	} catch (error) {
-		console.error('[AutoFill] Error during automatic filling:', error);
 		// Réinitialiser le flag en cas d'erreur
 		hasTriggeredAutoFill = false;
 	}
@@ -762,18 +611,17 @@ function showAutoFillNotification(filledCount, totalCount) {
 			notification.style.transform = 'translateY(0)';
 		});
 		
-		// Auto-remove after 5 seconds
+		// Auto-remove after 2 seconds
 		setTimeout(() => {
 			if (notification.parentElement) {
 				notification.style.opacity = '0';
 				notification.style.transform = 'translateY(-10px)';
 				setTimeout(() => notification.remove(), 100);
 			}
-		}, 5000);
+		}, 2000);
 		
-		console.log('[AutoFill] 📢 Auto-fill notification displayed');
 	} catch (error) {
-		console.error('[AutoFill] Error showing notification:', error);
+		// Silent error handling for notification
 	}
 }
 

@@ -15,51 +15,27 @@ class FormAutoFiller {
 	}
 
 	updateUserProfile(newProfile) {
-		console.log("🔄 UPDATE USER PROFILE CALLED");
-		console.log("├── New profile provided:", !!newProfile);
-		console.log("├── Current USER_PROFILE before update:", USER_PROFILE);
-		console.log("└── New profile data:", newProfile);
-
 		if (newProfile) {
 			Object.keys(newProfile).forEach((category) => {
-				console.log(`Processing category: ${category}`, newProfile[category]);
 				if (typeof newProfile[category] === "object" && newProfile[category] !== null) {
 					if (!USER_PROFILE[category]) {
 						USER_PROFILE[category] = {};
 					}
 					Object.assign(USER_PROFILE[category], newProfile[category]);
-					console.log(`✅ Updated USER_PROFILE.${category}:`, USER_PROFILE[category]);
 				}
 			});
 
-			console.log("📊 FINAL USER_PROFILE AFTER MERGE:", USER_PROFILE);
-			console.log("🔄 Regenerating dictionary...");
 			this.dictionary = generateFlatDictionary();
-			console.log("📖 GENERATED DICTIONARY:", this.dictionary);
 			this.fieldMatcher = new FieldMatcher(this.dictionary);
 			Logger.info("User profile updated from CSV data");
 			Logger.debug("Updated USER_PROFILE:", USER_PROFILE);
-			console.log("✅ USER PROFILE UPDATE COMPLETE");
-		} else {
-			console.log("❌ No new profile provided to updateUserProfile");
 		}
 	}
 
 	async fillForm() {
-		console.log("🚀 FILL FORM PROCESS STARTED");
-		console.log("├── USER_PROFILE.personal:", USER_PROFILE.personal);
-		console.log("├── USER_PROFILE keys:", Object.keys(USER_PROFILE));
-		console.log("└── Dictionary available:", !!this.dictionary);
-
 		Logger.info("Starting form fill process...");
 
 		if (!USER_PROFILE.personal || Object.keys(USER_PROFILE.personal).length === 0) {
-			console.log("❌ NO USER DATA - form fill aborted");
-			console.log("├── USER_PROFILE.personal:", USER_PROFILE.personal);
-			console.log(
-				"├── Keys length:",
-				USER_PROFILE.personal ? Object.keys(USER_PROFILE.personal).length : 0
-			);
 			Logger.error("No user data loaded. Please upload a CSV file first.");
 			return {
 				success: false,
