@@ -3,7 +3,7 @@
   "name": "FillEngine",
   "version": "1.1.1",
   "description": "Extension intelligente pour remplir automatiquement les formulaires Google avec vos données CSV personnalisées",
-  "author": "desiredev",
+  "author": "lich-t",
   "short_name": "FillEngine",
   "homepage_url": "https://github.com/lich-t/FillEngine_ff.git",
 
@@ -58,7 +58,7 @@
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "fillengine@tigerdev.com",
+      "id": "fillengine@lich-t.com",
       "strict_min_version": "109.0",
       "data_collection_permissions":  { 
 "required": ["none"] }
