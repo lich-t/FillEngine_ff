@@ -3,9 +3,9 @@
   "name": "FillEngine",
   "version": "1.1.1",
   "description": "Extension intelligente pour remplir automatiquement les formulaires Google avec vos données CSV personnalisées",
-  "author": "tigerdev",
+  "author": "desiredev",
   "short_name": "FillEngine",
-  "homepage_url": "https://github.com/tiger-githubb/FillEngine",
+  "homepage_url": "https://github.com/lich-t/FillEngine_ff.git",
 
   "permissions": ["activeTab", "tabs", "storage", "scripting"],
 
