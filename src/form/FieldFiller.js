@@ -422,7 +422,7 @@ class FieldFiller {
 		field.click();
 		const events = ["mousedown", "mouseup", "click"];
 		events.forEach((eventType) => {
-			field.dispatchEvent(new MouseEvent(eventType, { bubbles: true }));
+			field.dispatchEvent(new Event(eventType, { bubbles: true }));
 		});
 		return this.getGoogleFormsOptions(field);
 	}
@@ -447,9 +447,9 @@ class FieldFiller {
 
 	static triggerOptionSelection(option) {
 		option.click();
-		option.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-		option.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
-		option.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+		option.dispatchEvent(new Event("mousedown", { bubbles: true }));
+		option.dispatchEvent(new Event("mouseup", { bubbles: true }));
+		option.dispatchEvent(new Event("click", { bubbles: true }));
 	}
 
 	static updateAriaSelected(options, selectedOption) {
@@ -1336,9 +1336,9 @@ class FieldFiller {
 
 							// Déclencher les événements nécessaires
 							const events = [
-								new MouseEvent("mousedown", { bubbles: true }),
-								new MouseEvent("mouseup", { bubbles: true }),
-								new MouseEvent("click", { bubbles: true }),
+								new Event("mousedown", { bubbles: true }),
+								new Event("mouseup", { bubbles: true }),
+								new Event("click", { bubbles: true }),
 								new Event("change", { bubbles: true }),
 								new Event("input", { bubbles: true })
 							];
