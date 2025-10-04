@@ -1,5 +1,5 @@
 /**
- * Background Service Worker for Auto-Fill Google Forms Extension
+ * Background Script for Auto-Fill Google Forms Extension (Manifest V2)
  * Handles extension lifecycle and message passing between components
  */
 
