@@ -94,7 +94,7 @@ Vous gardez un contrôle total sur vos données :
 
 ### Firefox :
 - Version minimale : 109.0
-- ID de l'extension : fillengine@lich-t.com
+- ID de l'extension : fillengine@tigerdev.com
 - Permissions de collecte de données : Aucune requise
 
 ### Chrome :
